@@ -1,12 +1,48 @@
+var socketio = require('socket.io');
 var path = require('path');
 var express = require('express');
-var app = express(); // the app returned by express() is a JavaScript Function. Not something we can pass to our sockets!
+var app = express(); 
+const {Tablero,db}= require('./models')
 
-// app.listen() returns an http.Server object
-// http://expressjs.com/en/4x/api.html#app.listen
-var server = app.listen(1337, function () {
-    console.log('The server is listening on port 1337!');
-});
+
+db
+.sync({force:false})
+
+.then(()=>{
+		var server = app.listen(1337, function () {
+		    console.log('The server is listening on port 1337!');
+		});
+		var io = socketio(server);
+		io.on('connection', function (socket) {
+			Tablero.findAll()
+			.then((coordenadas)=>{
+				coordenadas.forEach(function(coor){
+					start=JSON.parse(coor.start)
+					end=JSON.parse(coor.end)
+					socket.emit('dibujar',start,end,coor.color)
+				})
+			})
+		    console.log('Un nuevo cliente se ha conectado!');
+		    console.log(socket.id);
+			socket.on('disconnect', function () {
+			    console.log('Un nuevo cliente se ha desconectado!');
+			    console.log(socket.id);
+			});
+			socket.on('dibujo',function(start,end,color){
+			var startedString=JSON.stringify(start)
+			var endString=JSON.stringify(end)
+			if(!color){
+				color='black'
+			}
+				Tablero.create({
+					start:startedString,
+					end:endString,
+					color,
+				})
+				socket.broadcast.emit('dibujar',start,end,color)
+			})
+		});
+	})
 
 app.use(express.static(path.join(__dirname, 'browser')));
 
