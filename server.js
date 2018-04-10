@@ -16,10 +16,14 @@ db
 		io.on('connection', function (socket) {
 			Tablero.findAll()
 			.then((coordenadas)=>{
+				let offset=0;
 				coordenadas.forEach(function(coor){
-					start=JSON.parse(coor.start)
-					end=JSON.parse(coor.end)
-					socket.emit('dibujar',start,end,coor.color)
+					setTimeout(()=>{
+						start=JSON.parse(coor.start)
+						end=JSON.parse(coor.end)
+						socket.emit('dibujar',start,end,coor.color)
+						},20 + offset)
+					offset+=20;
 				})
 			})
 		    console.log('Un nuevo cliente se ha conectado!');
